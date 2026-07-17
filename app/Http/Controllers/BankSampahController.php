@@ -106,23 +106,36 @@ class BankSampahController extends Controller
      */
     public function tarik(Request $request, BankSampah $bankSampah)
     {
-        // Record withdrawal: create a withdrawal record with current saldo and zero the saldo.
+        // Allow partial or full withdrawal. If amount provided, validate and use it.
         $current = (float) $bankSampah->saldo_tabungan;
         if ($current <= 0) {
-            return redirect()->route('bank-sampah.index')->with('error', 'Saldo kosong, tidak ada yang bisa ditarik.');
+            return redirect()->route('bank-sampah.show', $bankSampah)->with('error', 'Saldo kosong, tidak ada yang bisa ditarik.');
+        }
+
+        $validated = $request->validate([
+            'amount' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $amount = isset($validated['amount']) && $validated['amount'] > 0 ? (float) $validated['amount'] : $current;
+
+        if ($amount > $current) {
+            return redirect()->route('bank-sampah.show', $bankSampah)->with('error', 'Jumlah penarikan melebihi saldo.');
         }
 
         // create withdrawal record
         BankSampahWithdrawal::create([
             'bank_sampah_id' => $bankSampah->id,
-            'amount' => $current,
+            'amount' => $amount,
             'tanggal_penarikan' => now()->toDateString(),
         ]);
 
-        $bankSampah->status = 'Ditarik';
-        $bankSampah->saldo_tabungan = 0;
+        // deduct saldo and update status accordingly
+        $bankSampah->saldo_tabungan = $current - $amount;
+        if ($bankSampah->saldo_tabungan <= 0) {
+            $bankSampah->status = 'Ditarik';
+        }
         $bankSampah->save();
 
-        return redirect()->route('bank-sampah.index')->with('success', 'Penarikan dana berhasil dicatat.');
+        return redirect()->route('bank-sampah.show', $bankSampah)->with('success', 'Penarikan dana berhasil dicatat.');
     }
 }
