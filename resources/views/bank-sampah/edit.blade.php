@@ -25,10 +25,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Nama Nasabah <span class="text-danger">*</span></label>
-                    <input type="text" id="nama_nasabah" name="nama_nasabah" class="form-control" value="{{ old('nama_nasabah', $bankSampah->nama_nasabah) }}" required>
-                </div>
+                <!-- Nama nasabah removed: determined by warga selection -->
                 <div class="col-md-6">
                     <label class="form-label">NIK</label>
                     <input type="text" id="nik" name="nik" class="form-control" value="{{ old('nik', $bankSampah->nik) }}">
@@ -100,20 +97,24 @@
     const daftarHarga = @json($hargaSampah);
     const hitungTotal = () => { const hargaKg = daftarHarga[jenis.value] || 0; const beratKg = parseFloat(berat.value) || 0; harga.textContent = 'Rp ' + hargaKg.toLocaleString('id-ID'); total.textContent = 'Rp ' + (beratKg * hargaKg).toLocaleString('id-ID'); rumus.textContent = beratKg.toLocaleString('id-ID') + ' kg × Rp ' + hargaKg.toLocaleString('id-ID'); };
     berat.addEventListener('input', hitungTotal); jenis.addEventListener('change', hitungTotal); hitungTotal();
-    // warga select autofill
+    // warga select autofill + make fields readonly when a warga is selected
     const wargaSelect = document.getElementById('warga_select');
     if (wargaSelect) {
         wargaSelect.addEventListener('change', function(){
             const opt = this.options[this.selectedIndex];
-            const nama = opt.textContent || '';
-            const nikv = opt.dataset.nik || '';
-            const alamatv = opt.dataset.alamat || '';
-            const nohpv = opt.dataset.nohp || '';
-            if(document.getElementById('nama_nasabah')) document.getElementById('nama_nasabah').value = nama || '';
-            if(document.getElementById('nik')) document.getElementById('nik').value = nikv || '';
-            if(document.getElementById('alamat')) document.getElementById('alamat').value = alamatv || '';
-            if(document.getElementById('no_hp')) document.getElementById('no_hp').value = nohpv || '';
+            const nikv = opt ? (opt.dataset.nik || '') : '';
+            const alamatv = opt ? (opt.dataset.alamat || '') : '';
+            const nohpv = opt ? (opt.dataset.nohp || '') : '';
+            const isSelected = !!this.value;
+            const nikEl = document.getElementById('nik');
+            const alamatEl = document.getElementById('alamat');
+            const nohpEl = document.getElementById('no_hp');
+            if(nikEl) { nikEl.value = nikv || ''; nikEl.readOnly = isSelected; }
+            if(alamatEl) { alamatEl.value = alamatv || ''; alamatEl.readOnly = isSelected; }
+            if(nohpEl) { nohpEl.value = nohpv || ''; nohpEl.readOnly = isSelected; }
         });
+        // trigger change on load to set readonly if preselected
+        wargaSelect.dispatchEvent(new Event('change'));
     }
 </script>
 @endsection

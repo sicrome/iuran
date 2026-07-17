@@ -41,7 +41,6 @@ class BankSampahController extends Controller
     {
         $validated = $request->validate([
             'warga_id' => 'nullable|exists:users,id',
-            'nama_nasabah' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:20',
@@ -59,7 +58,7 @@ class BankSampahController extends Controller
         $validated['harga_per_kg'] = self::HARGA_SAMPAH[$validated['jenis_sampah']] ?? 0;
         $validated['saldo_tabungan'] = $validated['berat_sampah'] * $validated['harga_per_kg'];
 
-        // If warga selected, override personal fields from warga record
+        // If warga selected, override personal fields from warga record and set nama_nasabah from warga
         if (!empty($validated['warga_id'])) {
             $w = Warga::find($validated['warga_id']);
             if ($w) {
@@ -68,6 +67,9 @@ class BankSampahController extends Controller
                 $validated['alamat'] = $w->alamat ?? $validated['alamat'];
                 $validated['no_hp'] = $w->no_hp ?? $validated['no_hp'];
             }
+        } else {
+            // if no warga selected, require nama_nasabah from input fallback
+            $validated['nama_nasabah'] = $request->input('nama_nasabah', $request->input('nama')) ?? 'Anonim';
         }
 
         BankSampah::create($validated);
@@ -91,7 +93,6 @@ class BankSampahController extends Controller
     {
         $validated = $request->validate([
             'warga_id' => 'nullable|exists:users,id',
-            'nama_nasabah' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
             'no_hp' => 'nullable|string|max:20',
@@ -114,6 +115,8 @@ class BankSampahController extends Controller
                 $validated['alamat'] = $w->alamat ?? $validated['alamat'];
                 $validated['no_hp'] = $w->no_hp ?? $validated['no_hp'];
             }
+        } else {
+            $validated['nama_nasabah'] = $request->input('nama_nasabah', $request->input('nama')) ?? 'Anonim';
         }
 
         $bankSampah->update($validated);
