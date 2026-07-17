@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\BankSampah;
 
 class User extends Authenticatable
 {
@@ -46,5 +47,18 @@ class User extends Authenticatable
     public function isWarga()
     {
         return $this->role_id === 3;
+    }
+
+    protected static function booted()
+    {
+        static::updated(function ($user) {
+            // Sync related bank sampah records where warga_id references this user
+            BankSampah::where('warga_id', $user->id)->update([
+                'nama_nasabah' => $user->name,
+                'nik' => $user->nik,
+                'alamat' => $user->alamat,
+                'no_hp' => $user->no_hp,
+            ]);
+        });
     }
 }

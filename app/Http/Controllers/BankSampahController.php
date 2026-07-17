@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BankSampah;
 use App\Models\BankSampahWithdrawal;
-use App\Models\Warga;
+use App\Models\User as Warga;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -40,7 +40,7 @@ class BankSampahController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'warga_id' => 'nullable|exists:warga,id',
+            'warga_id' => 'nullable|exists:users,id',
             'nama_nasabah' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
@@ -90,7 +90,7 @@ class BankSampahController extends Controller
     public function update(Request $request, BankSampah $bankSampah)
     {
         $validated = $request->validate([
-            'warga_id' => 'nullable|exists:warga,id',
+            'warga_id' => 'nullable|exists:users,id',
             'nama_nasabah' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
