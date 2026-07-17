@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankSampah;
+use App\Models\BankSampahWithdrawal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -105,15 +106,23 @@ class BankSampahController extends Controller
      */
     public function tarik(Request $request, BankSampah $bankSampah)
     {
-        // Simple implementation: mark as 'Ditarik' and set saldo to 0.
-        if ($bankSampah->saldo_tabungan <= 0) {
+        // Record withdrawal: create a withdrawal record with current saldo and zero the saldo.
+        $current = (float) $bankSampah->saldo_tabungan;
+        if ($current <= 0) {
             return redirect()->route('bank-sampah.index')->with('error', 'Saldo kosong, tidak ada yang bisa ditarik.');
         }
+
+        // create withdrawal record
+        BankSampahWithdrawal::create([
+            'bank_sampah_id' => $bankSampah->id,
+            'amount' => $current,
+            'tanggal_penarikan' => now()->toDateString(),
+        ]);
 
         $bankSampah->status = 'Ditarik';
         $bankSampah->saldo_tabungan = 0;
         $bankSampah->save();
 
-        return redirect()->route('bank-sampah.index')->with('success', 'Penarikan dana berhasil diproses.');
+        return redirect()->route('bank-sampah.index')->with('success', 'Penarikan dana berhasil dicatat.');
     }
 }
