@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class BankSampah extends Model
 {
     protected $fillable = [
-        'kode_nasabah', 'nama_nasabah', 'nik', 'alamat', 'no_hp',
+        'kode_nasabah', 'warga_id', 'nama_nasabah', 'nik', 'alamat', 'no_hp',
         'jenis_sampah', 'berat_sampah', 'harga_per_kg', 'saldo_tabungan', 'status',
         'petugas', 'keterangan', 'tanggal_setoran',
     ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BankSampah;
 use App\Models\BankSampahWithdrawal;
+use App\Models\Warga;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -32,12 +33,14 @@ class BankSampahController extends Controller
 
     public function create()
     {
-        return view('bank-sampah.create', ['hargaSampah' => self::HARGA_SAMPAH]);
+        $wargas = Warga::select('id','name','nik','alamat','no_hp')->orderBy('name')->get();
+        return view('bank-sampah.create', ['hargaSampah' => self::HARGA_SAMPAH, 'wargas' => $wargas]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'warga_id' => 'nullable|exists:warga,id',
             'nama_nasabah' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
@@ -56,6 +59,17 @@ class BankSampahController extends Controller
         $validated['harga_per_kg'] = self::HARGA_SAMPAH[$validated['jenis_sampah']] ?? 0;
         $validated['saldo_tabungan'] = $validated['berat_sampah'] * $validated['harga_per_kg'];
 
+        // If warga selected, override personal fields from warga record
+        if (!empty($validated['warga_id'])) {
+            $w = Warga::find($validated['warga_id']);
+            if ($w) {
+                $validated['nama_nasabah'] = $w->name;
+                $validated['nik'] = $w->nik ?? $validated['nik'];
+                $validated['alamat'] = $w->alamat ?? $validated['alamat'];
+                $validated['no_hp'] = $w->no_hp ?? $validated['no_hp'];
+            }
+        }
+
         BankSampah::create($validated);
 
         return redirect()->route('bank-sampah.index')
@@ -69,12 +83,14 @@ class BankSampahController extends Controller
 
     public function edit(BankSampah $bankSampah)
     {
-        return view('bank-sampah.edit', compact('bankSampah') + ['hargaSampah' => self::HARGA_SAMPAH]);
+        $wargas = Warga::select('id','name','nik','alamat','no_hp')->orderBy('name')->get();
+        return view('bank-sampah.edit', compact('bankSampah') + ['hargaSampah' => self::HARGA_SAMPAH, 'wargas' => $wargas]);
     }
 
     public function update(Request $request, BankSampah $bankSampah)
     {
         $validated = $request->validate([
+            'warga_id' => 'nullable|exists:warga,id',
             'nama_nasabah' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20',
             'alamat' => 'nullable|string',
@@ -89,6 +105,16 @@ class BankSampahController extends Controller
 
         $validated['harga_per_kg'] = self::HARGA_SAMPAH[$validated['jenis_sampah']] ?? 0;
         $validated['saldo_tabungan'] = $validated['berat_sampah'] * $validated['harga_per_kg'];
+
+        if (!empty($validated['warga_id'])) {
+            $w = Warga::find($validated['warga_id']);
+            if ($w) {
+                $validated['nama_nasabah'] = $w->name;
+                $validated['nik'] = $w->nik ?? $validated['nik'];
+                $validated['alamat'] = $w->alamat ?? $validated['alamat'];
+                $validated['no_hp'] = $w->no_hp ?? $validated['no_hp'];
+            }
+        }
 
         $bankSampah->update($validated);
 
