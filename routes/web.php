@@ -86,6 +86,9 @@ Route::middleware('auth')->prefix('program-desa')->group(function () {
 Route::resource('bank-sampah', BankSampahController::class)->middleware('auth');
 // Tarik dana (penarikan) untuk nasabah bank sampah
 Route::post('bank-sampah/{bank_sampah}/tarik', [BankSampahController::class, 'tarik'])->middleware('auth')->name('bank-sampah.tarik');
+// Riwayat penarikan (global) + export
+Route::get('bank-sampah-withdrawals', [BankSampahController::class, 'withdrawalsIndex'])->middleware('auth')->name('bank-sampah.withdrawals.index');
+Route::get('bank-sampah-withdrawals/export', [BankSampahController::class, 'exportWithdrawals'])->middleware('auth')->name('bank-sampah.withdrawals.export');
 Route::resource('umkm', UmkmController::class)->middleware('auth');
 Route::resource('surat-menyurat', SuratMenyuratController::class)->middleware('auth');
 Route::resource('ronda', RondaController::class)->middleware('auth');

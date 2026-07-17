@@ -96,12 +96,27 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="button" id="btnTarikSemua" class="btn btn-outline-danger">Tarik Semua</button>
                             <button type="submit" class="btn btn-danger">Proses Tarik</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+        <script>
+            (function(){
+                const btnAll = document.getElementById('btnTarikSemua');
+                const amountInput = document.getElementById('amount');
+                if(btnAll && amountInput){
+                    btnAll.addEventListener('click', function(){
+                        // clear the input to indicate full withdrawal (server treats empty as full)
+                        amountInput.value = '';
+                        // submit the form
+                        amountInput.closest('form').submit();
+                    });
+                }
+            })();
+        </script>
     </div>
 </div>
 @endsection

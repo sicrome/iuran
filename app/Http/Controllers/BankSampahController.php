@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\BankSampah;
 use App\Models\BankSampahWithdrawal;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -137,5 +139,48 @@ class BankSampahController extends Controller
         $bankSampah->save();
 
         return redirect()->route('bank-sampah.show', $bankSampah)->with('success', 'Penarikan dana berhasil dicatat.');
+    }
+
+    /**
+     * Show global withdrawals history.
+     */
+    public function withdrawalsIndex()
+    {
+        $withdrawals = BankSampahWithdrawal::with('bankSampah')->latest()->paginate(25);
+        return view('bank-sampah.withdrawals', compact('withdrawals'));
+    }
+
+    /**
+     * Export withdrawals as CSV.
+     */
+    public function exportWithdrawals()
+    {
+        $rows = BankSampahWithdrawal::with('bankSampah')->latest()->get();
+
+        $filename = 'withdrawals_' . now()->format('Ymd_His') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $columns = ['id', 'bank_sampah_kode', 'nama_nasabah', 'amount', 'tanggal_penarikan', 'created_at'];
+
+        $callback = function () use ($rows, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            foreach ($rows as $r) {
+                fputcsv($file, [
+                    $r->id,
+                    $r->bankSampah->kode_nasabah ?? '-',
+                    $r->bankSampah->nama_nasabah ?? '-',
+                    number_format($r->amount, 2, '.', ''),
+                    $r->tanggal_penarikan,
+                    $r->created_at,
+                ]);
+            }
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 }
