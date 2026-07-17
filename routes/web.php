@@ -4,7 +4,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PemasukanController;
 use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\WargaController;
-use App\Http\Controllers\IuranController;
 use App\Http\Controllers\PengurusRtController;
 use App\Http\Controllers\DataRtController;
 use App\Http\Controllers\LaporanController;
@@ -12,10 +11,18 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\PengumumanController;
+use App\Http\Controllers\KasController;
+use App\Http\Controllers\ProgramDesaController;
+use App\Http\Controllers\PosyanduController;
+use App\Http\Controllers\IuranController;
 use App\Http\Controllers\PembayaranController;
-use App\Http\Controllers\ExportController;
-use App\Http\Controllers\JenisIuranController;
-use App\Http\Controllers\PdfExportController;
+use App\Http\Controllers\BankSampahController;
+use App\Http\Controllers\UmkmController;
+use App\Http\Controllers\SuratMenyuratController;
+use App\Http\Controllers\RondaController;
+use App\Http\Controllers\KegiatanController;
+use App\Http\Controllers\AspirasiController;
+use App\Http\Controllers\KwitansiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,22 +33,31 @@ Route::get('/', function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth'])
     ->name('dashboard');
+Route::get('/layanan', [DashboardController::class, 'layanan'])
+    ->middleware(['auth'])
+    ->name('layanan');
 
 // PEMASUKAN & PENGELUARAN
 Route::resource('pemasukan', PemasukanController::class)->middleware('auth');
 Route::resource('pengeluaran', PengeluaranController::class)->middleware('auth');
+Route::resource('program-desa/kas', KasController::class)->middleware('auth')->names('kas');
+Route::get('kas/{kas}/kwitansi', [KwitansiController::class, 'cetak'])->middleware('auth')->name('kwitansi.cetak');
+Route::get('/iuran', [IuranController::class, 'index'])->middleware('auth')->name('iuran.index');
+Route::get('/iuran/buat', [IuranController::class, 'create'])->middleware('auth')->name('iuran.create');
+Route::post('/iuran', [IuranController::class, 'store'])->middleware('auth')->name('iuran.store');
+Route::post('/iuran/generate', [IuranController::class, 'generate'])->middleware('auth')->name('iuran.generate');
+Route::get('/iuran/{iuran}/bayar', [IuranController::class, 'bayar'])->middleware('auth')->name('iuran.bayar');
+Route::post('/iuran/{iuran}/bayar', [IuranController::class, 'kirimPembayaran'])->middleware('auth')->name('iuran.kirim-pembayaran');
+Route::get('/validasi-transfer', [PembayaranController::class, 'index'])->middleware('auth')->name('pembayaran.index');
+Route::post('/validasi-transfer/{pembayaran}/terima', [PembayaranController::class, 'terima'])->middleware('auth')->name('pembayaran.terima');
+Route::post('/validasi-transfer/{pembayaran}/tolak', [PembayaranController::class, 'tolak'])->middleware('auth')->name('pembayaran.tolak');
 
 // MASTER DATA
 Route::resource('warga', WargaController::class)->middleware('auth');
-Route::resource('iuran', IuranController::class)->middleware('auth');
 Route::resource('pengurus', PengurusRtController::class)->middleware('auth');
 Route::resource('data-rt', DataRtController::class)->middleware('auth');
 
 // LAPORAN
-Route::get('/laporan/keuangan', [LaporanController::class, 'keuangan'])
-    ->middleware('auth')->name('laporan.keuangan');
-Route::get('/laporan/iuran', [LaporanController::class, 'iuran'])
-    ->middleware('auth')->name('laporan.iuran');
 Route::get('/laporan/kas', [LaporanController::class, 'kas'])
     ->middleware('auth')->name('laporan.kas');
 
@@ -58,26 +74,54 @@ Route::resource('kategori', KategoriController::class)->middleware('auth');
 Route::resource('pengumuman', PengumumanController::class)->middleware('auth');
 Route::get('/pengumuman/toggle/{id}', [PengumumanController::class, 'toggleStatus'])->middleware('auth')->name('pengumuman.toggle');
 
-// ============ PEMBAYARAN ONLINE ============
-Route::resource('pembayaran', PembayaranController::class)->middleware('auth');
-Route::get('/pembayaran/verify/{id}', [PembayaranController::class, 'verify'])->middleware('auth')->name('pembayaran.verify');
-Route::post('/pembayaran/confirm/{id}', [PembayaranController::class, 'confirm'])->middleware('auth')->name('pembayaran.confirm');
+// PROGRAM DESA
+Route::middleware('auth')->prefix('program-desa')->group(function () {
+    Route::get('/', [ProgramDesaController::class, 'index'])->name('program-desa.index');
+    // URL kompatibilitas untuk formulir Bank Sampah versi awal.
+    Route::post('/bank-sampah', [BankSampahController::class, 'store'])->name('program-desa.bank-sampah.store');
+    Route::match(['GET', 'POST'], '/{slug}', [ProgramDesaController::class, 'show'])->name('program-desa.show');
+});
 
-// EXPORT EXCEL
-Route::get('/export/keuangan', [ExportController::class, 'exportKeuangan'])->middleware('auth')->name('export.keuangan');
-Route::get('/export/iuran', [ExportController::class, 'exportIuran'])->middleware('auth')->name('export.iuran');
+// PROGRAM DESA MODULES (Full CRUD)
+Route::resource('bank-sampah', BankSampahController::class)->middleware('auth');
+// Tarik dana (penarikan) untuk nasabah bank sampah
+Route::post('bank-sampah/{bank_sampah}/tarik', [BankSampahController::class, 'tarik'])->middleware('auth')->name('bank-sampah.tarik');
+Route::resource('umkm', UmkmController::class)->middleware('auth');
+Route::resource('surat-menyurat', SuratMenyuratController::class)->middleware('auth');
+Route::resource('ronda', RondaController::class)->middleware('auth');
+Route::resource('kegiatan', KegiatanController::class)->middleware('auth');
+Route::resource('aspirasi', AspirasiController::class)->middleware('auth');
 
-// EXPORT PDF
-Route::get('/export/pdf/keuangan', [PdfExportController::class, 'keuangan'])->middleware('auth')->name('export.pdf.keuangan');
-Route::get('/export/pdf/iuran', [PdfExportController::class, 'iuran'])->middleware('auth')->name('export.pdf.iuran');
-Route::get('/export/pdf/kas', [PdfExportController::class, 'kas'])->middleware('auth')->name('export.pdf.kas');
+// POSYANDU
+Route::middleware('auth')->prefix('posyandu')->name('posyandu.')->group(function () {
+    Route::get('/peserta', [PosyanduController::class, 'pesertaIndex'])->name('peserta.index');
+    Route::get('/peserta/create', [PosyanduController::class, 'pesertaCreate'])->name('peserta.create');
+    Route::post('/peserta', [PosyanduController::class, 'pesertaStore'])->name('peserta.store');
+    Route::get('/peserta/{peserta}', [PosyanduController::class, 'pesertaShow'])->name('peserta.show');
+    Route::get('/peserta/{peserta}/edit', [PosyanduController::class, 'pesertaEdit'])->name('peserta.edit');
+    Route::put('/peserta/{peserta}', [PosyanduController::class, 'pesertaUpdate'])->name('peserta.update');
+    Route::delete('/peserta/{peserta}', [PosyanduController::class, 'pesertaDestroy'])->name('peserta.destroy');
 
-// JENIS IURAN
-Route::resource('jenis-iuran', JenisIuranController::class)->middleware('auth');
+    Route::get('/jadwal', [PosyanduController::class, 'jadwalIndex'])->name('jadwal.index');
+    Route::get('/jadwal/create', [PosyanduController::class, 'jadwalCreate'])->name('jadwal.create');
+    Route::post('/jadwal', [PosyanduController::class, 'jadwalStore'])->name('jadwal.store');
+    Route::get('/jadwal/{jadwal}/edit', [PosyanduController::class, 'jadwalEdit'])->name('jadwal.edit');
+    Route::put('/jadwal/{jadwal}', [PosyanduController::class, 'jadwalUpdate'])->name('jadwal.update');
+    Route::delete('/jadwal/{jadwal}', [PosyanduController::class, 'jadwalDestroy'])->name('jadwal.destroy');
 
-// VERIFIKASI IURAN (dari IuranController)
-Route::get('/iuran/verify/{id}', [IuranController::class, 'verify'])->middleware('auth')->name('iuran.verify');
-Route::post('/iuran/process-verify/{id}', [IuranController::class, 'processVerify'])->middleware('auth')->name('iuran.processVerify');
+    Route::get('/pemeriksaan', [PosyanduController::class, 'pemeriksaanIndex'])->name('pemeriksaan.index');
+    Route::get('/pemeriksaan/create', [PosyanduController::class, 'pemeriksaanCreate'])->name('pemeriksaan.create');
+    Route::post('/pemeriksaan', [PosyanduController::class, 'pemeriksaanStore'])->name('pemeriksaan.store');
+    Route::get('/pemeriksaan/{pemeriksaan}', [PosyanduController::class, 'pemeriksaanShow'])->name('pemeriksaan.show');
+    Route::delete('/pemeriksaan/{pemeriksaan}', [PosyanduController::class, 'pemeriksaanDestroy'])->name('pemeriksaan.destroy');
+
+    Route::get('/imunisasi', [PosyanduController::class, 'imunisasiIndex'])->name('imunisasi.index');
+    Route::get('/imunisasi/create', [PosyanduController::class, 'imunisasiCreate'])->name('imunisasi.create');
+    Route::post('/imunisasi', [PosyanduController::class, 'imunisasiStore'])->name('imunisasi.store');
+    Route::delete('/imunisasi/{imunisasi}', [PosyanduController::class, 'imunisasiDestroy'])->name('imunisasi.destroy');
+
+    Route::get('/laporan', [PosyanduController::class, 'laporan'])->name('laporan');
+});
 
 // REDIRECT
 Route::get('/transfer', function () {
